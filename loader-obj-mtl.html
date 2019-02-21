@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <title>Load OBJ and MTL </title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+    <script type="text/javascript" src="build/three.js"></script>
+    <script type="text/javascript" src="js/controls/FirstPersonControls.js"></script>
+    <script type="text/javascript" src="js/loaders/OBJLoader.js"></script>
+    <script type="text/javascript" src="js/loaders/MTLLoader.js"></script>
+
+    <style>
+        body {
+            /* set margin to 0 and overflow to hidden, to go fullscreen */
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+<div id="Stats-output">
+</div>
+<!-- Div which will hold the Output -->
+<div id="WebGL-output">
+</div>
+
+<!-- Javascript code that runs our Three.js examples -->
+<script type="text/javascript">
+
+    // once everything is loaded, we run our Three.js stuff.
+
+
+    function init() {
+
+        // var stats = initStats();
+
+        // create a scene, that will hold all our elements such as objects, cameras and lights.
+        var scene = new THREE.Scene();
+
+        // create a camera, which defines where we're looking at.
+        var camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 1, 10000);
+
+        // create a render and set the size
+        var webGLRenderer = new THREE.WebGLRenderer();
+        webGLRenderer.setClearColor(new THREE.Color(0xccccee));
+        webGLRenderer.setSize(window.innerWidth, window.innerHeight);
+        webGLRenderer.shadowMapEnabled = true;
+
+        // position and point the camera to the center of the scene
+        // camera.position.set(100, 100,100);
+        camera.lookAt(new THREE.Vector3(0,0,0));
+
+       // add spotlight for the shadows
+        var directionalLight1 = new THREE.DirectionalLight( 0xC0C090 );
+        var directionalLight2 = new THREE.DirectionalLight( 0xC0C090 );
+
+        directionalLight1.position.set( -100, -50, 100 );
+        directionalLight2.position.set( 100, 50, -100 );
+
+        scene.add( directionalLight1 );
+        scene.add( directionalLight2 );
+
+
+        // add the output of the renderer to the html element
+        document.getElementById("WebGL-output").appendChild(webGLRenderer.domElement);
+
+
+        var onProgress = function ( xhr ) {
+
+            if ( xhr.lengthComputable ) {
+
+                var percentComplete = xhr.loaded / xhr.total * 100;
+                console.log( Math.round( percentComplete, 2 ) + '% downloaded' );
+
+            }
+
+        };
+
+        var onError = function () { };
+
+        new THREE.MTLLoader()
+        .setPath( '../assets/models/' )
+        .load( 'room.mtl', function ( materials ) {
+
+            materials.preload();
+
+            new THREE.OBJLoader()
+                .setMaterials( materials )
+                .setPath( '../assets/models/' )
+                .load( 'room.obj', function ( object ) {
+
+                    object.position.set(-300, 20, -500);
+                    object.scale.set(0.05, 0.05, 0.05);
+                    scene.add( object );
+                    
+                }, onProgress, onError );
+
+        } );
+
+        function onMouseClick( event ) { //通过鼠标点击的位置计算出raycaster所需要的点的位置，以屏幕中心为原点，值的范围为-1到1. 
+
+            var vector = new THREE.Vector3(( event.clientX / window.innerWidth ) * 2 - 1, -( event.clientY / window.innerHeight ) * 2 + 1, 0.5);
+            vector = vector.unproject(camera);
+
+            var raycaster = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize()); // 通过鼠标点的位置和当前相机的矩阵计算出raycaster 
+            console.log(scene.children[2].children);
+            var intersects = raycaster.intersectObjects( scene.children[2].children );  //获取raycaster直线和所有模型相交的数组集合 
+            
+            select = true;
+            if (select && intersects.length>0) {
+                alert("名称：" + intersects[0].object.name);
+                select = false;
+            }  
+        } 
+        window.addEventListener( 'dblclick', onMouseClick, false ); 
+
+
+        controls = new THREE.FirstPersonControls(camera);  //使用第一视角控制器FirstPersonControls控制相机
+        controls.lookSpeed = 0; //鼠标移动查看的速度
+        controls.movementSpeed = 500; //相机移动速度
+        controls.noFly = true;
+        controls.constrainVertical = true; //约束垂直
+        controls.verticalMin = 1.0;
+        controls.verticalMax = 2.0;
+        controls.lon = -100; //进入初始视角x轴的角度
+        controls.lat = 0; //初始视角进入后y轴的角度
+
+        var clock = new THREE.Clock();
+ 
+        function animate() {
+            //更新控制器
+            controls.update(clock.getDelta());
+        
+            requestAnimationFrame(animate);
+        }
+        animate();
+        render();
+
+        function render() {
+            requestAnimationFrame(render);
+            webGLRenderer.render(scene, camera);
+        }
+    }
+    window.onload = init;
+</script>
+</body>
+</html>
