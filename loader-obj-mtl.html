@@ -7,7 +7,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
     <script type="text/javascript" src="build/three.js"></script>
+    <script type="text/javascript" src="js/controls/TrackballControls.js"></script>
+    <script type="text/javascript" src="js/controls/TrackballControls.js"></script>
     <script type="text/javascript" src="js/controls/FirstPersonControls.js"></script>
     <script type="text/javascript" src="js/loaders/OBJLoader.js"></script>
     <script type="text/javascript" src="js/loaders/MTLLoader.js"></script>
@@ -18,11 +21,19 @@
             margin: 0;
             overflow: hidden;
         }
+        #identity {
+            width: 120px;
+            height: 160px;
+            background-color: #fff;
+            position: absolute;
+            right: 0;
+            top: 0px;
+        }
     </style>
 </head>
 <body>
 
-<div id="Stats-output">
+<div id="identity">
 </div>
 <!-- Div which will hold the Output -->
 <div id="WebGL-output">
@@ -42,7 +53,7 @@
         var scene = new THREE.Scene();
 
         // create a camera, which defines where we're looking at.
-        var camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 1, 10000);
+        var camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 1, 1000);
 
         // create a render and set the size
         var webGLRenderer = new THREE.WebGLRenderer();
@@ -53,6 +64,7 @@
         // position and point the camera to the center of the scene
         // camera.position.set(100, 100,100);
         camera.lookAt(new THREE.Vector3(0,0,0));
+        var scaleControls = new THREE.TrackballControls( camera );
 
        // add spotlight for the shadows
         var directionalLight1 = new THREE.DirectionalLight( 0xC0C090 );
@@ -79,22 +91,21 @@
             }
 
         };
-
+        
         var onError = function () { };
-
         new THREE.MTLLoader()
         .setPath( '../assets/models/' )
-        .load( 'room.mtl', function ( materials ) {
+        .load( 'box.mtl', function ( materials ) {
 
             materials.preload();
 
             new THREE.OBJLoader()
                 .setMaterials( materials )
                 .setPath( '../assets/models/' )
-                .load( 'room.obj', function ( object ) {
-
+                .load( 'box.obj', function ( object ) {
                     object.position.set(-300, 20, -500);
                     object.scale.set(0.05, 0.05, 0.05);
+
                     scene.add( object );
                     
                 }, onProgress, onError );
@@ -112,12 +123,14 @@
             
             select = true;
             if (select && intersects.length>0) {
-                alert("名称：" + intersects[0].object.name);
+                var html = "名称:" + intersects[0].object.name;
+                $("#identity").html("名称:" + intersects[0].object.name);
                 select = false;
             }  
         } 
         window.addEventListener( 'dblclick', onMouseClick, false ); 
-
+        
+       
 
         controls = new THREE.FirstPersonControls(camera);  //使用第一视角控制器FirstPersonControls控制相机
         controls.lookSpeed = 0; //鼠标移动查看的速度
@@ -133,17 +146,21 @@
  
         function animate() {
             //更新控制器
-            controls.update(clock.getDelta());
+            //controls.update(clock.getDelta());
+
+            scaleControls.update();
         
             requestAnimationFrame(animate);
-        }
-        animate();
-        render();
-
-        function render() {
-            requestAnimationFrame(render);
             webGLRenderer.render(scene, camera);
         }
+        animate();
+
+        function onResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            webGLRenderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        window.addEventListener('resize', onResize, false);
     }
     window.onload = init;
 </script>
